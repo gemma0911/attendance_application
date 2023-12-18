@@ -1,4 +1,4 @@
-<h1>Chức năng</h1><br/>
+<h1>Chức năng</h1>
 User : <br/>
 + Login<br/>
 + Điểm danh<br/>
