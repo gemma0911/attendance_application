@@ -66,6 +66,22 @@ public class UDPServer {
 			byte[] sendData = byteArrayOutputStream.toByteArray();
 			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), clientPort);
             socket.send(sendPacket);
+		} else if(request.startsWith("DELETEID")) {
+			handleDeleteRequest(request, clientPort, receivePacket.getAddress());
+		}
+	}
+	
+	private void handleDeleteRequest(String request, int clientPort, InetAddress clientAddress) {
+		String[] data = request.substring(9).split(",");
+		int id = Integer.parseInt(data[0]);
+
+		connection = new Connect();
+
+		if (connection.deleteStatus(id)) {
+			sendMessage("OK", clientAddress, clientPort);
+			System.out.println(clientAddress + ":" + clientPort);
+		} else {
+			sendMessage("INVALID", clientAddress, clientPort);
 		}
 	}
 

@@ -4,11 +4,22 @@ import java.io.Serializable;
 
 public class Status implements Serializable {
 	private static final long serialVersionUID = 1L;
+	private int id;
 	private String username;
 	private String time;
 	private String ip;
 	private int host;
 	
+	
+	public int getId() {
+		return id;
+	}
+	public void setId(int id) {
+		this.id = id;
+	}
+	public static long getSerialversionuid() {
+		return serialVersionUID;
+	}
 	public String getUsername() {
 		return username;
 	}

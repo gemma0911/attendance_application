@@ -64,6 +64,36 @@ public class Connect {
         return false;
     }
 
+    public static boolean deleteStatus(int statusId) {
+        try {
+            connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+
+            if (connection != null) {
+                System.out.println("Connected to the database successfully!");
+            }
+
+            String query = "DELETE FROM status WHERE id = ?";
+            preparedStatement = connection.prepareStatement(query);
+            preparedStatement.setInt(1, statusId);
+
+            int rowsAffected = preparedStatement.executeUpdate();
+
+            if (rowsAffected > 0) {
+                System.out.println("Status deleted successfully!");
+                return true;
+            } else {
+                System.out.println("Failed to delete status!");
+                return false;
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            closeResources();
+        }
+        return false;
+    }
+
+    
     public static List<Status> getUserStatus() {
         List<Status> statusList = new ArrayList<>();
 
@@ -80,6 +110,7 @@ public class Connect {
 
             while (resultSet.next()) {
                 Status status = new Status();
+                status.setId(resultSet.getInt("id"));
                 status.setUsername(resultSet.getString("username"));
                 status.setTime(resultSet.getString("time"));
                 status.setIp(resultSet.getString("ip"));
