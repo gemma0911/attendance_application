@@ -5,7 +5,7 @@ User : <br/>
 Admin :<br/>
 + Xem danh sách đã điểm danh<br/>
 + Xóa lịch sử điểm danh  <br/>
-- Mô tả hoạt động
+- Mô tả hoạt động -<br/>
 + Bật server <br/>
 + Client đăng nhập tài khoản mật khẩu gửi về server, server tiến hành truy xuất db nếu đúng mở dao diện điểm danh.<br/>
 + Nếu trong khoản thời gian đó người dùng đã điểm dành thì không cho điểm danh tiếp.<br/>
