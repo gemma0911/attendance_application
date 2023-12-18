@@ -5,5 +5,5 @@ User : <br/>
 Admin :<br/>
 + Xem danh sách đã điểm danh<br/>
 + Xóa lịch sử điểm danh  <br/>
-=> Viết theo giao thức UDP <= <br/>
-=> Theo mô hình Client - Server <=
+<h1>=> Viết theo giao thức UDP <=</h1> <br/>
+<h1>=> Theo mô hình Client - Server <=</h1>
