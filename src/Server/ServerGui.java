@@ -1,20 +1,13 @@
 package Server;
 
-import java.awt.Color;
-import java.awt.EventQueue;
-import java.awt.Font;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-
-import javax.swing.JButton;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.border.EmptyBorder;
 
 public class ServerGui extends JFrame {
 
@@ -22,8 +15,8 @@ public class ServerGui extends JFrame {
     private static JPanel contentPane;
     private static DatagramSocket socket = null;
     private static UDPServer server;
-    private static JLabel lblNewLabel_1;
     private static JButton btnNewButton;
+    private static JTextArea textArea;
     
     public static void main(String[] args) throws SocketException {
         EventQueue.invokeLater(() -> {
@@ -38,25 +31,24 @@ public class ServerGui extends JFrame {
 
     public ServerGui() throws SocketException {
         server = new UDPServer();
+        server.setServerGui(this);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setBounds(100, 100, 402, 282);
+        setBounds(100, 100, 484, 454);
         contentPane = new JPanel();
         contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
         setContentPane(contentPane);
         contentPane.setLayout(null);
-
-        lblNewLabel_1 = new JLabel("");
-        lblNewLabel_1.setForeground(Color.RED);
-        lblNewLabel_1.setFont(new Font("Tahoma", Font.BOLD, 15));
-        lblNewLabel_1.setHorizontalAlignment(SwingConstants.CENTER);
-        lblNewLabel_1.setBounds(33, 145, 323, 40);
-        contentPane.add(lblNewLabel_1);
 
         btnNewButton = createButton("Start Server", 33, 27, 152, 56, e -> startServer());
         contentPane.add(btnNewButton);
 
         JButton btnStopServer = createButton("Stop Server", 195, 27, 120, 56, e -> stopServer());
         contentPane.add(btnStopServer);
+
+        textArea = new JTextArea();
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        scrollPane.setBounds(33, 117, 416, 290);
+        contentPane.add(scrollPane);
     }
 
     private JButton createButton(String text, int x, int y, int width, int height, ActionListener listener) {
@@ -79,6 +71,10 @@ public class ServerGui extends JFrame {
     private void stopServer() {
         server.closeServer(socket);
         enableStartButton();
+    }
+
+    public static void appendToTextArea(String message) {
+        SwingUtilities.invokeLater(() -> textArea.append(message + "\n"));
     }
 
     private void disableStartButton() {

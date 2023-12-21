@@ -1,13 +1,17 @@
 package Server;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.io.File;
 
 import DAO.Connect;
 
@@ -15,6 +19,11 @@ public class UDPServer {
 
 	private static Map<Integer, Thread> portThreads = new HashMap<>();
 	private static Connect connection;
+	private ServerGui serverGui;
+
+	public void setServerGui(ServerGui serverGui) {
+		this.serverGui = serverGui;
+	}
 
 	private volatile boolean isRunning = true;
 
@@ -52,70 +61,79 @@ public class UDPServer {
 		String request = new String(receivePacket.getData(), 0, receivePacket.getLength());
 		int clientPort = receivePacket.getPort();
 
-		Thread clientThread = portThreads.get(clientPort);
-
 		if (request.startsWith("LOGIN")) {
-			handleLoginRequest(request, clientPort, receivePacket.getAddress());
+			ServerHandler.handleLoginRequest(request, clientPort, receivePacket.getAddress());
+
 		} else if (request.startsWith("DIEMDANH")) {
-			handleDiemDanhRequest(request, clientPort, receivePacket.getAddress());
+			ServerHandler.handleDiemDanhRequest(request, clientPort, receivePacket.getAddress());
+
 		} else if (request.equals("ADMIN")) {
+
 			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
 			ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+
 			objectOutputStream.writeObject(Connect.getUserStatus());
 			objectOutputStream.flush();
+
 			byte[] sendData = byteArrayOutputStream.toByteArray();
-			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), clientPort);
-            socket.send(sendPacket);
-		} else if(request.startsWith("DELETEID")) {
-			handleDeleteRequest(request, clientPort, receivePacket.getAddress());
-		}
-	}
-	
-	private void handleDeleteRequest(String request, int clientPort, InetAddress clientAddress) {
-		String[] data = request.substring(9).split(",");
-		int id = Integer.parseInt(data[0]);
+			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(),
+					clientPort);
+			socket.send(sendPacket);
 
-		connection = new Connect();
-
-		if (connection.deleteStatus(id)) {
-			sendMessage("OK", clientAddress, clientPort);
-			System.out.println(clientAddress + ":" + clientPort);
-		} else {
-			sendMessage("INVALID", clientAddress, clientPort);
+		} else if (request.startsWith("DELETEID")) {
+			ServerHandler.handleDeleteRequest(request, clientPort, receivePacket.getAddress());
+			
+		} else if (request.startsWith("SEND_FILE_REQUEST")) {
+			handleFileRequest(socket, receivePacket);
 		}
 	}
 
-	private void handleLoginRequest(String request, int clientPort, InetAddress clientAddress) {
-		String[] loginInfo = request.substring(6).split(",");
-		String username = loginInfo[0];
-		String password = loginInfo[1];
+	private void handleFileRequest(DatagramSocket socket, DatagramPacket receivePacket) {
+		try {
 
-		connection = new Connect();
+			byte[] nameSizeData = new byte[1024];
+			DatagramPacket nameSizePacket = new DatagramPacket(nameSizeData, nameSizeData.length);
+			socket.receive(nameSizePacket);
+			String nameSizeStr = new String(nameSizePacket.getData(), 0, nameSizePacket.getLength());
 
-		if (connection.login(username, password)) {
-			sendMessage("OK", clientAddress, clientPort);
-			System.out.println(clientAddress + ":" + clientPort);
-		} else {
-			sendMessage("INVALID", clientAddress, clientPort);
+			int nameSize = 0;
+			if (!nameSizeStr.isEmpty()) {
+				nameSize = Integer.parseInt(nameSizeStr);
+			}
+
+			byte[] nameData = new byte[nameSize];
+			DatagramPacket namePacket = new DatagramPacket(nameData, nameData.length);
+			socket.receive(namePacket);
+			String fileName = new String(namePacket.getData(), 0, namePacket.getLength());
+
+			byte[] sizeData = new byte[1024];
+			DatagramPacket sizePacket = new DatagramPacket(sizeData, sizeData.length);
+			socket.receive(sizePacket);
+			int fileSize = Integer.parseInt(new String(sizePacket.getData(), 0, sizePacket.getLength()));
+
+			byte[] fileData = new byte[fileSize];
+			DatagramPacket filePacket = new DatagramPacket(fileData, fileData.length);
+			socket.receive(filePacket);
+
+			String filePath = "C:\\Users\\thang\\Desktop\\hehe\\" + File.separator + fileName;
+
+			try (FileOutputStream fileOutputStream = new FileOutputStream(filePath)) {
+				fileOutputStream.write(fileData);
+			} catch (IOException e) {
+				e.printStackTrace();
+				sendMessage("Error receiving file: " + e.getMessage(), receivePacket.getAddress(),
+						receivePacket.getPort());
+				return;
+			}
+
+			sendMessage("File received successfully", receivePacket.getAddress(), receivePacket.getPort());
+
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
-	private void handleDiemDanhRequest(String request, int clientPort, InetAddress clientAddress) {
-		String[] loginInfo = request.substring(9).split(",");
-		String username = loginInfo[0];
-		String time = loginInfo[1];
-		System.out.println(username);
-		connection = new Connect();
-
-		if (connection.addUser(username, time, clientAddress.toString(), clientPort)) {
-			sendMessage("OK", clientAddress, clientPort);
-			System.err.println(clientAddress);
-		} else {
-			sendMessage("INVALID", clientAddress, clientPort);
-		}
-	}
-
-	private static void sendMessage(String message, InetAddress clientAddress, int clientPort) {
+	public static void sendMessage(String message, InetAddress clientAddress, int clientPort) {
 		try (DatagramSocket socket = new DatagramSocket()) {
 			byte[] sendData = message.getBytes();
 			DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, clientAddress, clientPort);

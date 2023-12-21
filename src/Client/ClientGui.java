@@ -3,6 +3,8 @@ package Client;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
+import Admin.AdminGui;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -15,8 +17,8 @@ public class ClientGui extends JFrame {
 
     private static final long serialVersionUID = 1L;
     private JPanel contentPane;
-    private JTextField textField;
-    private JTextField textField_1;
+    private JTextField username;
+    private JTextField password;
     private DatagramSocket socket = null;
     private int serverPort = 9876;
     private InetAddress serverAddress;
@@ -41,15 +43,15 @@ public class ClientGui extends JFrame {
         setContentPane(contentPane);
         contentPane.setLayout(null);
 
-        textField = new JTextField();
-        textField.setBounds(159, 23, 197, 40);
-        contentPane.add(textField);
-        textField.setColumns(10);
+        username = new JTextField();
+        username.setBounds(159, 23, 197, 40);
+        contentPane.add(username);
+        username.setColumns(10);
 
-        textField_1 = new JTextField();
-        textField_1.setColumns(10);
-        textField_1.setBounds(159, 87, 197, 40);
-        contentPane.add(textField_1);
+        password = new JTextField();
+        password.setColumns(10);
+        password.setBounds(159, 87, 197, 40);
+        contentPane.add(password);
 
         JLabel lblNewLabel = new JLabel("Username");
         setLabelProperties(lblNewLabel, 33, 23);
@@ -93,7 +95,7 @@ public class ClientGui extends JFrame {
                     socket = new DatagramSocket();
                     serverAddress = InetAddress.getByName("localhost");
 
-                    String request = "LOGIN " + textField.getText() + "," + textField_1.getText();
+                    String request = "LOGIN " + username.getText() + "," + password.getText();
                     byte[] sendData = request.getBytes();
                     DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, serverPort);
                     socket.send(sendPacket);
@@ -106,11 +108,16 @@ public class ClientGui extends JFrame {
 
                     if (response.equals("OK")) {
                         System.out.println("Login successful!");
-                        new MenuGui(textField.getText()).setVisible(true);
+                        new MenuGui(username.getText()).setVisible(true);
                         dispose();
                     } else if (response.equals("INVALID")) {
                         showError("Invalid username or password!");
-                    }
+                    } else if (response.equals("ERROR")) {
+                        showError("Bạn không thể đăng nhập ngay lúc này");
+                    } else if (response.equals("ADMIN")) {
+                    	 new AdminGui().setVisible(true);
+                         dispose();
+                    } 
                     
                 } catch (IOException e) {
                     e.printStackTrace();
