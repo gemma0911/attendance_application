@@ -1,22 +1,16 @@
 package Client;
-
-import java.awt.EventQueue;
-
-import javax.swing.JFrame;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
 import File.SendFile;
 
-import javax.swing.JTextField;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-
-import java.awt.Font;
-import java.awt.Color;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -24,28 +18,21 @@ import java.net.InetAddress;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import javax.swing.JButton;
-import javax.swing.JFileChooser;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.Timer;
-
 public class MenuGui extends JFrame {
 
     private static final long serialVersionUID = 1L;
-    private static JPanel contentPane;
-    private static JTextField textField;
+    private JPanel contentPane;
+    private JTextField textField;
     private static DatagramSocket socket = null;
     private static int serverPort = 9876;
     private static InetAddress serverAddress;
     private JTextField textField_1;
     private JLabel lblHTnSinh;
-    private String receivedData;
     private JTextField textField_2;
     private JButton btnNpBi;
-	private SendFile file;
-	
-    private boolean isNopBaiEnabled = false; // Thêm biến mới
+    private SendFile file;
+
+    private volatile boolean listening = true;
 
     private static void sendDiemDanhRequestToServer(String username, String time) {
         String request = "DIEMDANH " + username + "," + time;
@@ -54,12 +41,11 @@ public class MenuGui extends JFrame {
 
     public static void statClient(String data) {
         try {
-            // Gửi và nhận dữ liệu từ server
+
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        socket = new DatagramSocket();
                         serverAddress = InetAddress.getByName("192.168.96.1");
 
                         String request = data;
@@ -76,10 +62,6 @@ public class MenuGui extends JFrame {
                         handleDiemDanhResponse(response);
                     } catch (IOException e) {
                         e.printStackTrace();
-                    } finally {
-                        if (socket != null) {
-                            socket.close();
-                        }
                     }
                 }
             });
@@ -106,9 +88,50 @@ public class MenuGui extends JFrame {
                 JOptionPane.showMessageDialog(null, "Bạn đang điểm danh giúp người khác đấy", response,
                         JOptionPane.OK_OPTION);
                 break;
-            default:
-                // Xử lý các trường hợp khác nếu cần
+            case "FILE":
+                int option = JOptionPane.showConfirmDialog(null, "Do you want to save the received file?", "File Received", JOptionPane.YES_NO_OPTION);
+                if (option == JOptionPane.YES_OPTION) {
+                    saveReceivedFile();
+                }
                 break;
+
+            default:
+                break;
+        }
+    }
+    
+    private static void saveReceivedFile() {
+        JFileChooser fileChooser = new JFileChooser();
+        int result = fileChooser.showSaveDialog(null);
+
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
+            FileOutputStream fileOutputStream = null;
+            try {
+                fileOutputStream = new FileOutputStream(selectedFile);
+                byte[] receiveData = new byte[1024];
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                socket.receive(receivePacket);
+                fileOutputStream.write(receivePacket.getData(), 0, receivePacket.getLength());
+
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(null, "File saved successfully", "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+                });
+            } catch (IOException e) {
+                e.printStackTrace();
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(null, "Error saving file", "Error", JOptionPane.ERROR_MESSAGE);
+                });
+            } finally {
+                if (fileOutputStream != null) {
+                    try {
+                        fileOutputStream.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
         }
     }
 
@@ -121,7 +144,8 @@ public class MenuGui extends JFrame {
         textField_2.setText(dateTime1);
     }
 
-    public MenuGui(String username) {
+    public MenuGui(String username, DatagramSocket socket) {
+        this.socket = socket;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setBounds(100, 100, 402, 282);
         contentPane = new JPanel();
@@ -175,10 +199,7 @@ public class MenuGui extends JFrame {
         btnNpBi.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-            	sendFile();
-//                JOptionPane.showMessageDialog(null, "Bài đã được nộp thành công", "Thông báo",
-//                        JOptionPane.INFORMATION_MESSAGE);
-//                btnNpBi.setEnabled(false);
+                sendFile();
             }
         });
 
@@ -198,41 +219,65 @@ public class MenuGui extends JFrame {
             }
         });
         timer.start();
+
+        // Add a window listener to call closeWindow() when the window is closed
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                closeWindow();
+            }
+        });
+
+        // Start the listening thread
+        startListeningThread();
     }
 
-    public static void main(String[] args) {
-        EventQueue.invokeLater(new Runnable() {
-            public void run() {
+    private void startListeningThread() {
+        Thread listenerThread = new Thread(() -> {
+            while (listening) {
                 try {
-                    MenuGui frame = new MenuGui("TestUser");
-                    frame.setVisible(true);
-                } catch (Exception e) {
+                    byte[] receiveData = new byte[1024];
+                    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                    socket.receive(receivePacket);
+
+                    String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                    handleDiemDanhResponse(response);
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         });
+        listenerThread.start();
     }
-    
-    private void sendFile() {
-		JFileChooser fileChooser = new JFileChooser();
-		int result = fileChooser.showOpenDialog(this);
 
-		if (result == JFileChooser.APPROVE_OPTION) {
-			File selectedFile = fileChooser.getSelectedFile();
-			System.err.println(selectedFile);
-			file = new SendFile();
-			try {
-				file.sendFileRequest(selectedFile, serverAddress, serverPort);
-				SwingUtilities.invokeLater(() -> {
-					JOptionPane.showMessageDialog(this, "File sent successfully", "Success",
-							JOptionPane.INFORMATION_MESSAGE);
-				});
-			} catch (Exception e) {
-				e.printStackTrace();
-				SwingUtilities.invokeLater(() -> {
-					JOptionPane.showMessageDialog(this, "Error sending file", "Error", JOptionPane.ERROR_MESSAGE);
-				});
-			}
-		}
-	}
+    private void stopListening() {
+        listening = false;
+    }
+
+    private void closeWindow() {
+        stopListening();
+        dispose();
+    }
+
+    private void sendFile() {
+        JFileChooser fileChooser = new JFileChooser();
+        int result = fileChooser.showOpenDialog(this);
+
+        if (result == JFileChooser.APPROVE_OPTION) {
+            File selectedFile = fileChooser.getSelectedFile();
+            file = new SendFile();
+            try {
+                file.sendFileRequest(selectedFile, serverAddress, serverPort);
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(this, "File sent successfully", "Success",
+                            JOptionPane.INFORMATION_MESSAGE);
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(this, "Error sending file", "Error", JOptionPane.ERROR_MESSAGE);
+                });
+            }
+        }
+    }
 }

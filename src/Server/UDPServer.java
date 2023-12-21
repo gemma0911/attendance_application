@@ -7,19 +7,27 @@ import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.io.File;
 
 import DAO.Connect;
+import File.SendFile;
+import File.ServerSendFile;
 
 public class UDPServer {
 
 	private static Map<Integer, Thread> portThreads = new HashMap<>();
 	private static Connect connection;
 	private ServerGui serverGui;
+	private static ConcurrentMap<Integer, InetAddress> address = new ConcurrentHashMap<>();
 
 	public void setServerGui(ServerGui serverGui) {
 		this.serverGui = serverGui;
@@ -63,10 +71,10 @@ public class UDPServer {
 
 		if (request.startsWith("LOGIN")) {
 			ServerHandler.handleLoginRequest(request, clientPort, receivePacket.getAddress());
-
+			address.put(clientPort, receivePacket.getAddress());
 		} else if (request.startsWith("DIEMDANH")) {
 			ServerHandler.handleDiemDanhRequest(request, clientPort, receivePacket.getAddress());
-
+			address.remove(clientPort);
 		} else if (request.equals("ADMIN")) {
 
 			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -82,7 +90,7 @@ public class UDPServer {
 
 		} else if (request.startsWith("DELETEID")) {
 			ServerHandler.handleDeleteRequest(request, clientPort, receivePacket.getAddress());
-			
+
 		} else if (request.startsWith("SEND_FILE_REQUEST")) {
 			handleFileRequest(socket, receivePacket);
 		}
@@ -117,16 +125,29 @@ public class UDPServer {
 
 			String filePath = "C:\\Users\\thang\\Desktop\\hehe\\" + File.separator + fileName;
 
-			try (FileOutputStream fileOutputStream = new FileOutputStream(filePath)) {
-				fileOutputStream.write(fileData);
-			} catch (IOException e) {
-				e.printStackTrace();
-				sendMessage("Error receiving file: " + e.getMessage(), receivePacket.getAddress(),
-						receivePacket.getPort());
-				return;
-			}
+            try (FileOutputStream fileOutputStream = new FileOutputStream(filePath)) {
+                fileOutputStream.write(fileData);
+            } catch (IOException e) {
+                e.printStackTrace();
+                sendMessage("Error receiving file: " + e.getMessage(), receivePacket.getAddress(),
+                        receivePacket.getPort());
+                return;
+            }
 
-			sendMessage("File received successfully", receivePacket.getAddress(), receivePacket.getPort());
+            File file = new File(filePath);
+            if (file.exists()) {
+                System.out.println("Tệp tồn tại.");
+                for (Map.Entry<Integer, InetAddress> entry : address.entrySet()) {
+                    int clientPort = entry.getKey();
+                    InetAddress clientAddress = entry.getValue();
+                    System.err.println(clientPort + "............." + clientAddress);
+                    ServerSendFile.sendFileRequest(file, clientAddress, clientPort);
+//                    sendMessage("FILE", clientAddress, clientPort);
+                }
+            } else {
+                System.out.println("Tệp không tồn tại.");
+            }
+//			sendMessage("File received successfully", receivePacket.getAddress(), receivePacket.getPort());
 
 		} catch (IOException e) {
 			e.printStackTrace();

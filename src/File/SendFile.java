@@ -18,7 +18,7 @@ public class SendFile {
 	public void sendFileRequest(File file,InetAddress serverAddress,int serverPort) {
 		
 	    try (DatagramSocket socket = new DatagramSocket()) {
-	        serverAddress = InetAddress.getByName("localhost");
+	        serverAddress = InetAddress.getByName("192.168.96.1");
 
 	        // Gửi yêu cầu gửi file
 	        String request = "SEND_FILE_REQUEST";

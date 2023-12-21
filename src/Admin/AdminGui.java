@@ -103,7 +103,7 @@ public class AdminGui extends JFrame {
 			@Override
 			protected List<Status> doInBackground() {
 				try (DatagramSocket socket = new DatagramSocket()) {
-					serverAddress = InetAddress.getByName("localhost");
+					serverAddress = InetAddress.getByName("192.168.96.1");
 
 					String request = "ADMIN";
 					byte[] sendData = request.getBytes();
@@ -167,7 +167,6 @@ public class AdminGui extends JFrame {
 		JOptionPane.showMessageDialog(this, message, "Error", JOptionPane.ERROR_MESSAGE);
 	}
 
-	// ...
 
 	private void addActionButtonToTable(JTable table) {
 		TableColumn column = table.getColumnModel().getColumn(table.getColumnCount() - 1);

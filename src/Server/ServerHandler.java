@@ -31,7 +31,7 @@ public class ServerHandler {
 		if (Connect.deleteStatus(id)) {
 			UDPServer.sendMessage("OK", clientAddress, clientPort);
 			System.out.println(clientAddress + ":" + clientPort);
-			 ServerGui.appendToTextArea("Đã xóa status id = " + id );
+			ServerGui.appendToTextArea("Đã xóa status id = " + id );
 		} else {
 			UDPServer.sendMessage("INVALID", clientAddress, clientPort);
 		}
@@ -41,7 +41,7 @@ public class ServerHandler {
 		String[] loginInfo = request.substring(9).split(",");
 		String username = loginInfo[0];
 		String time = loginInfo[1];
-		System.out.println(username);
+        System.out.println(clientAddress + ":" + clientPort);
 
 		SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
 		String dateTime = dateFormat.format(new Date());
