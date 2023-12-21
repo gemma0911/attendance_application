@@ -4,6 +4,7 @@ User : <br/>
 + Điểm danh<br/>
 + Nộp bài tập <br/>
 Admin :<br/>
++ Gửi File cho các client đã đăng nhập <br/>
 + Xem danh sách đã điểm danh<br/>
 + Xóa lịch sử điểm danh  <br/>
 - Mô tả hoạt động -<br/>
