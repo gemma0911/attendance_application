@@ -2,6 +2,7 @@ package Client;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
+import File.Receive;
 import File.SendFile;
 
 import java.awt.*;
@@ -22,14 +23,15 @@ public class MenuGui extends JFrame {
 
     private static final long serialVersionUID = 1L;
     private JPanel contentPane;
-    private JTextField textField;
+    private JTextField date;
     private static DatagramSocket socket = null;
     private static int serverPort = 9876;
     private static InetAddress serverAddress;
-    private JTextField textField_1;
+    private JTextField username_1;
+    private static DatagramPacket receivePacket;
     private JLabel lblHTnSinh;
-    private JTextField textField_2;
-    private JButton btnNpBi;
+    private JTextField time_1;
+    private JButton ntNopBai;
     private SendFile file;
 
     private volatile boolean listening = true;
@@ -55,7 +57,7 @@ public class MenuGui extends JFrame {
                         socket.send(sendPacket);
 
                         byte[] receiveData = new byte[1024];
-                        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                        receivePacket = new DatagramPacket(receiveData, receiveData.length);
                         socket.receive(receivePacket);
 
                         String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
@@ -91,7 +93,7 @@ public class MenuGui extends JFrame {
             case "FILE":
                 int option = JOptionPane.showConfirmDialog(null, "Do you want to save the received file?", "File Received", JOptionPane.YES_NO_OPTION);
                 if (option == JOptionPane.YES_OPTION) {
-                    saveReceivedFile();
+                	Receive.handleFileRequest(socket, null);
                 }
                 break;
 
@@ -115,13 +117,13 @@ public class MenuGui extends JFrame {
                 fileOutputStream.write(receivePacket.getData(), 0, receivePacket.getLength());
 
                 SwingUtilities.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(null, "File saved successfully", "Success",
+                    JOptionPane.showMessageDialog(null, "Lưu file thành công", "Success",
                             JOptionPane.INFORMATION_MESSAGE);
                 });
             } catch (IOException e) {
                 e.printStackTrace();
                 SwingUtilities.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(null, "Error saving file", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Lưu file thất bại", "Error", JOptionPane.ERROR_MESSAGE);
                 });
             } finally {
                 if (fileOutputStream != null) {
@@ -140,8 +142,8 @@ public class MenuGui extends JFrame {
         String dateTime = dateFormat.format(new Date());
         SimpleDateFormat dateFormat1 = new SimpleDateFormat("HH:mm:ss");
         String dateTime1 = dateFormat1.format(new Date());
-        textField.setText(dateTime);
-        textField_2.setText(dateTime1);
+        date.setText(dateTime);
+        time_1.setText(dateTime1);
     }
 
     public MenuGui(String username, DatagramSocket socket) {
@@ -154,10 +156,10 @@ public class MenuGui extends JFrame {
         setContentPane(contentPane);
         contentPane.setLayout(null);
 
-        textField = new JTextField();
-        textField.setBounds(159, 88, 197, 40);
-        contentPane.add(textField);
-        textField.setColumns(10);
+        date = new JTextField();
+        date.setBounds(159, 88, 197, 40);
+        contentPane.add(date);
+        date.setColumns(10);
 
         JLabel lblNewLabel = new JLabel("Ngày");
         lblNewLabel.setForeground(Color.RED);
@@ -165,15 +167,15 @@ public class MenuGui extends JFrame {
         lblNewLabel.setBounds(21, 88, 128, 40);
         contentPane.add(lblNewLabel);
 
-        JButton btnNewButton = new JButton("Điểm danh");
-        btnNewButton.setBounds(199, 195, 157, 40);
-        contentPane.add(btnNewButton);
+        JButton btDiemDanh = new JButton("Điểm danh");
+        btDiemDanh.setBounds(199, 195, 157, 40);
+        contentPane.add(btDiemDanh);
 
-        textField_1 = new JTextField();
-        textField_1.setText(username);
-        textField_1.setColumns(10);
-        textField_1.setBounds(159, 31, 197, 40);
-        contentPane.add(textField_1);
+        username_1 = new JTextField();
+        username_1.setText(username);
+        username_1.setColumns(10);
+        username_1.setBounds(159, 31, 197, 40);
+        contentPane.add(username_1);
 
         lblHTnSinh = new JLabel("Username");
         lblHTnSinh.setForeground(Color.RED);
@@ -187,27 +189,27 @@ public class MenuGui extends JFrame {
         lblGi.setBounds(21, 138, 128, 40);
         contentPane.add(lblGi);
 
-        textField_2 = new JTextField();
-        textField_2.setColumns(10);
-        textField_2.setBounds(159, 138, 197, 40);
-        contentPane.add(textField_2);
+        time_1 = new JTextField();
+        time_1.setColumns(10);
+        time_1.setBounds(159, 138, 197, 40);
+        contentPane.add(time_1);
 
-        btnNpBi = new JButton("Nộp bài");
-        btnNpBi.setBounds(32, 195, 157, 40);
-        contentPane.add(btnNpBi);
+        ntNopBai = new JButton("Nộp bài");
+        ntNopBai.setBounds(32, 195, 157, 40);
+        contentPane.add(ntNopBai);
 
-        btnNpBi.addActionListener(new ActionListener() {
+        ntNopBai.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 sendFile();
             }
         });
 
-        btnNewButton.addActionListener(new ActionListener() {
+        btDiemDanh.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                String username = textField_1.getText();
-                String time = textField.getText();
-                sendDiemDanhRequestToServer(textField_1.getText(), time);
+                String username = username_1.getText();
+                String time = date.getText();
+                sendDiemDanhRequestToServer(username_1.getText(), time);
                 dispose();
             }
         });
@@ -267,15 +269,15 @@ public class MenuGui extends JFrame {
             File selectedFile = fileChooser.getSelectedFile();
             file = new SendFile();
             try {
-                file.sendFileRequest(selectedFile, serverAddress, serverPort);
+                file.sendFileRequest(selectedFile, serverAddress, serverPort,"FILECLIENT");
                 SwingUtilities.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(this, "File sent successfully", "Success",
+                    JOptionPane.showMessageDialog(this, "Nộp thành công", "Success",
                             JOptionPane.INFORMATION_MESSAGE);
                 });
             } catch (Exception e) {
                 e.printStackTrace();
                 SwingUtilities.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(this, "Error sending file", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Nộp thất bại", "Error", JOptionPane.ERROR_MESSAGE);
                 });
             }
         }

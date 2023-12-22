@@ -7,11 +7,6 @@ import java.io.ObjectOutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -19,13 +14,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.io.File;
 
 import DAO.Connect;
-import File.SendFile;
 import File.ServerSendFile;
 
 public class UDPServer {
 
-	private static Map<Integer, Thread> portThreads = new HashMap<>();
-	private static Connect connection;
 	private ServerGui serverGui;
 	private static ConcurrentMap<Integer, InetAddress> address = new ConcurrentHashMap<>();
 
@@ -90,9 +82,10 @@ public class UDPServer {
 
 		} else if (request.startsWith("DELETEID")) {
 			ServerHandler.handleDeleteRequest(request, clientPort, receivePacket.getAddress());
-
 		} else if (request.startsWith("SEND_FILE_REQUEST")) {
 			handleFileRequest(socket, receivePacket);
+		} else if(request.startsWith("FILECLIENT")) {
+			handleFileRequest1(socket, receivePacket);
 		}
 	}
 
@@ -153,6 +146,50 @@ public class UDPServer {
 			e.printStackTrace();
 		}
 	}
+	
+	private void handleFileRequest1(DatagramSocket socket, DatagramPacket receivePacket) {
+		try {
+
+			byte[] nameSizeData = new byte[1024];
+			DatagramPacket nameSizePacket = new DatagramPacket(nameSizeData, nameSizeData.length);
+			socket.receive(nameSizePacket);
+			String nameSizeStr = new String(nameSizePacket.getData(), 0, nameSizePacket.getLength());
+
+			int nameSize = 0;
+			if (!nameSizeStr.isEmpty()) {
+				nameSize = Integer.parseInt(nameSizeStr);
+			}
+
+			byte[] nameData = new byte[nameSize];
+			DatagramPacket namePacket = new DatagramPacket(nameData, nameData.length);
+			socket.receive(namePacket);
+			String fileName = new String(namePacket.getData(), 0, namePacket.getLength());
+
+			byte[] sizeData = new byte[1024];
+			DatagramPacket sizePacket = new DatagramPacket(sizeData, sizeData.length);
+			socket.receive(sizePacket);
+			int fileSize = Integer.parseInt(new String(sizePacket.getData(), 0, sizePacket.getLength()));
+
+			byte[] fileData = new byte[fileSize];
+			DatagramPacket filePacket = new DatagramPacket(fileData, fileData.length);
+			socket.receive(filePacket);
+
+			String filePath = "C:\\Users\\thang\\Desktop\\hehe\\" + File.separator + fileName;
+
+            try (FileOutputStream fileOutputStream = new FileOutputStream(filePath)) {
+                fileOutputStream.write(fileData);
+            } catch (IOException e) {
+                e.printStackTrace();
+                sendMessage("Error receiving file: " + e.getMessage(), receivePacket.getAddress(),
+                        receivePacket.getPort());
+                ServerGui.appendToTextArea(receivePacket+":"+receivePacket.getPort()+":đã nộp bài tập");
+                return;
+            }
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 
 	public static void sendMessage(String message, InetAddress clientAddress, int clientPort) {
 		try (DatagramSocket socket = new DatagramSocket()) {

@@ -108,11 +108,11 @@ public class ClientGui extends JFrame {
 					String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
 
 					if (response.equals("OK")) {
-						System.out.println("Login successful!");
+						System.out.println("Đăng nhập thành công");
 						new MenuGui(username.getText(), socket).setVisible(true);
 						dispose();
 					} else if (response.equals("INVALID")) {
-						showError("Invalid username or password!");
+						showError("Tài khoản hoặc mật khẩu không chính xác");
 					} else if (response.equals("ERROR")) {
 						showError("Bạn không thể đăng nhập ngay lúc này");
 					} else if (response.equals("ADMIN")) {

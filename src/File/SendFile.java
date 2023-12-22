@@ -15,13 +15,13 @@ import Admin.AdminGui;
 
 public class SendFile {
 	
-	public void sendFileRequest(File file,InetAddress serverAddress,int serverPort) {
+	public void sendFileRequest(File file,InetAddress serverAddress,int serverPort,String title) {
 		
 	    try (DatagramSocket socket = new DatagramSocket()) {
 	        serverAddress = InetAddress.getByName("192.168.96.1");
 
 	        // Gửi yêu cầu gửi file
-	        String request = "SEND_FILE_REQUEST";
+	        String request = title;
 	        byte[] requestData = request.getBytes();
 	        DatagramPacket requestPacket = new DatagramPacket(requestData, requestData.length, serverAddress, serverPort);
 	        socket.send(requestPacket);

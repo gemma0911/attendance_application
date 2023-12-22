@@ -45,13 +45,12 @@ public class AdminGui extends JFrame {
 		setContentPane(contentPane);
 		contentPane.setLayout(new BorderLayout(0, 0));
 
-		JButton btnSendFile = createButton("Send File", e -> sendFile());
+		JButton btnSendFile = createButton("Gửi bài tập", e -> sendFile());
 		contentPane.add(btnSendFile, BorderLayout.SOUTH);
 
 		initializeTable();
 		initializeButtons();
 
-		// Load data when the application is initialized
 		displayUsersData();
 	}
 
@@ -64,15 +63,15 @@ public class AdminGui extends JFrame {
 			System.err.println(selectedFile);
 			file = new SendFile();
 			try {
-				file.sendFileRequest(selectedFile, serverAddress, serverPort);
+				file.sendFileRequest(selectedFile, serverAddress, serverPort,"SEND_FILE_REQUEST");
 				SwingUtilities.invokeLater(() -> {
-					JOptionPane.showMessageDialog(this, "File sent successfully", "Success",
+					JOptionPane.showMessageDialog(this, "Gửi thành công", "Success",
 							JOptionPane.INFORMATION_MESSAGE);
 				});
 			} catch (Exception e) {
 				e.printStackTrace();
 				SwingUtilities.invokeLater(() -> {
-					JOptionPane.showMessageDialog(this, "Error sending file", "Error", JOptionPane.ERROR_MESSAGE);
+					JOptionPane.showMessageDialog(this, "Gửi thất bại", "Error", JOptionPane.ERROR_MESSAGE);
 				});
 			}
 		}
@@ -88,7 +87,7 @@ public class AdminGui extends JFrame {
 	}
 
 	private void initializeButtons() {
-		JButton btnDisplayUsersData = createButton("Display Users Data", e -> displayUsersData());
+		JButton btnDisplayUsersData = createButton("Làm mới dữ liệu", e -> displayUsersData());
 		contentPane.add(btnDisplayUsersData, BorderLayout.NORTH);
 	}
 
@@ -123,6 +122,7 @@ public class AdminGui extends JFrame {
 					} catch (ClassNotFoundException | IOException e) {
 						e.printStackTrace();
 					}
+					
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
