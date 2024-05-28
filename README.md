@@ -17,6 +17,3 @@ Admin :<br/>
 + Admin có thể xóa danh sách. <br/><br/>
 <h1>Viết theo giao thức UDP</h1>
 <h1>Theo mô hình Client - Server</h1>
-Coder : Trà Quang Thắng <br/>
-Fb : https://www.facebook.com/gema0911 <br/>
-Gmail : thangtq.it@gmail.com
